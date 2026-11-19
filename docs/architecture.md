@@ -43,14 +43,14 @@ and renderer here are original small application code, not a second ML runtime.
 
 ## Scheduling / ownership
 
-Encoder PA2/PD5 is polled from main, matching Mopping_rotaly. Two valid
-Gray-code edges produce a rotation event; bounce/reversal cancels pending phase
-and invalid transitions reset it. Events are accumulated with a saturating
-counter and applied outside the OLED picture loop. No encoder IRQ is enabled.
-After each 128-byte page transfer, a 6ms fast polling window captures input while
-App remains immutable. There are still gaps during rendering, I2C and inference;
-fast rotation can lose edges and requires hardware evaluation. Electrical
-direction and events per physical detent depend on the encoder and A/B wiring.
+Encoder PA2/PD5 and PC4 button are sampled together from main and after each
+page transfer (6ms polling window), with Mopping_rotaly's two-edge decoder. A
+four-entry timestamped semantic event queue preserves normal rotation, held
+movement and release order. No event merging cancels opposite moves. Debounce
+boundary phases are reset, and a held movement consumes click/long-press behavior.
+Queue overflow ends the gesture, counts loss and fails closed until release (or
+queue drain when unheld). See [controls](controls.md) for exact limitations.
+App is updated only after all eight pages, so the picture loop stays immutable.
 
 Button polling uses main, 20ms debounce and 700ms long press. A long press is
 emitted once, with no release click. Its maximum sampling gap includes the OLED

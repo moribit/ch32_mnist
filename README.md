@@ -101,3 +101,14 @@ zig build
 The standard build installs ELF, HEX and BIN files under `zig-out/firmware/`. No custom output prefix is needed.
 
 Rotary input follows Mopping_rotaly: GPIO polling with two valid phase edges per event. A 6ms polling window follows each OLED page transfer. Fast-rotation edge loss and the revised device response still require hardware confirmation.
+
+## DRAW interface
+
+![DRAW prediction](docs/snapshots/draw-result.png)
+
+The left canvas has an outlined cursor with an eight-direction arrow; the right
+side shows a large prediction, pending dots or an empty marker. Hold and rotate
+to move forward/backwards without turning. A held stroke is one UNDO operation.
+See [controls](docs/controls.md) and [screenshots, budgets and limitations](docs/draw-ui.md).
+No extra framebuffer or model change is introduced. Device validation of this
+UI revision remains pending; the earlier SSD1306 display was user-confirmed.

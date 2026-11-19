@@ -8,13 +8,23 @@ done
 "$z" build
 "$z" build size
 for controller in ssd1306 ssd1309 ssd1315 sh1106; do "$z" build -Ddisplay="$controller" --prefix "zig-out/$controller"; done
-"$z" build -Dtrace=true -Dbenchmark=true --prefix zig-out/benchmark
+"$z" build -Dtrace=true --prefix zig-out/trace
+# Full DRAW + trace + benchmark no longer fits; preserve explicit rejection.
+if "$z" build -Dtrace=true -Dbenchmark=true --prefix zig-out/benchmark > zig-out/rejected-combined-benchmark.log 2>&1; then
+ echo "Combined benchmark unexpectedly fits: review/update documented budget" >&2; exit 1
+fi
+if ! grep -Eq 'overflowed|FlashOverflow|FlashBudget' zig-out/rejected-combined-benchmark.log; then
+ cat zig-out/rejected-combined-benchmark.log >&2; exit 1
+fi
 "$z" build -Dtrace=true -Dbenchmark=true -Ddiagnostic=true --prefix zig-out/diagnostic
 "$z" build -Dpreprocess=antialiased --prefix zig-out/antialiased
 "$z" build export-model
 cmp models/mnist-int4.zig zig-out/models/regenerated-int4.zig
 "$z" build simulate -- sample zig-out/sample.pbm
 "$z" build simulate -- inspect zig-out/inspect.pbm
+for scene in draw-empty draw-down draw-up draw-pending draw-result draw-edge menu; do
+ "$z" build simulate -- "$scene" "zig-out/$scene.pbm"
+done
 if "$z" build -Dflash-bytes=1024 > zig-out/rejected-flash.log 2>&1; then echo "Flash limit was not enforced" >&2; exit 1; fi
 if "$z" build -Dram-bytes=1024 > zig-out/rejected-ram.log 2>&1; then echo "RAM limit was not enforced" >&2; exit 1; fi
 if "$z" build -Dmodel=unknown > zig-out/rejected-option.log 2>&1; then echo "Bad model was not rejected" >&2; exit 1; fi

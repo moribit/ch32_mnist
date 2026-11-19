@@ -1,23 +1,33 @@
 # Final-ELF memory budget
 
 Measured by the existing Zinn addMemoryCheck on the final linked ELF, Zig 0.17.0
-ReleaseSmall, CH32V003 RV32EC. Flash capacity 16,384B; 64B reserved by the HAL
+`.small`, CH32V003 RV32EC. Flash capacity 16,384B; 64B reserved by the HAL
 linker, usable limit 16,320B. SRAM capacity 2,048B.
 
 | Configuration | Flash B | Static SRAM B | Main + ISR allowance B | RAM margin B |
 |---|---:|---:|---:|---:|
-| SSD1306 / default | 14,480 | 652 | 512 + 128 | 756 |
-| SSD1309 | 14,284 | 652 | 512 + 128 | 756 |
-| SSD1315 | 14,480 | 652 | 512 + 128 | 756 |
-| SH1106 | 14,296 | 652 | 512 + 128 | 756 |
-| Trace + nine-run benchmark / encoder active | 15,096 | 740 | 512 + 128 | 668 |
-| SWIO diagnostic + Trace + benchmark / encoder off | 14,392 | 704 | 512 + 128 | 704 |
-| Antialiased preprocessing | 14,572 | 652 | 512 + 128 | 756 |
+| ssd1306 | 16,060 | 668 | 512 + 128 | 740 |
+| ssd1309 | 15,760 | 668 | 512 + 128 | 740 |
+| ssd1315 | 16,060 | 668 | 512 + 128 | 740 |
+| sh1106 | 15,736 | 668 | 512 + 128 | 740 |
+| trace | 16,316 | 712 | 512 + 128 | 696 |
+| diagnostic | 15,896 | 756 | 512 + 128 | 652 |
+| antialiased | 16,152 | 668 | 512 + 128 | 740 |
 
-Machine-readable evidence: [cross-build-sizes.json](cross-build-sizes.json).
-These are cross-built sizes, not hardware measurements. Int8 whole-app linking
-is rejected (about 2.4KB above available Flash); no silent int4 fallback occurs
-when explicitly requesting int8. The normal default is explicitly int4.
+Current DRAW revision: [cross-build-sizes.json](cross-build-sizes.json).
+Initial milestone sizes are preserved in [cross-build-sizes-initial.json](cross-build-sizes-initial.json).
+The immediate input-polling baseline was 14,208B Flash / 620B static SRAM.
+Current default is 16,060B / 668B: +1,852B / +48B. The 1KB Flash growth target was
+not met; the model remains MLP32 int4. Both physical limits and the 64B Flash
+reservation remain enforced. There are 260B of usable Flash left in the default
+and only 4B with Trace; these are tight budgets, not spare capacity guarantees.
+
+Full DRAW + Trace + benchmark exceeds Flash and is rejected. For nine-run timing
+and stack-watermark preparation, use `-Ddiagnostic=true -Dtrace=true -Dbenchmark=true`.
+This retains SAMPLE/INSPECT, disables input and preserves SWIO. This combined-option
+restriction is a regression relative to the smaller UI and remains a limitation.
+No budget was increased and no smaller model was substituted. Int8 whole-app
+linking remains rejected; host int8 golden verification still passes.
 
 The budget checker covers every load segment, Flash load addresses for .data,
 RAM placement and initialized/BSS statics, and rejects out-of-region placement.
@@ -42,7 +52,7 @@ The 1024B host PBM buffer lives only in the simulator executable.
 512B main and 128B ISR are separate allowances. The compact EXTI entry explicitly
 saves 64B; handler/callee usage must fit the remaining ISR allowance. It does not
 use nested interrupts or HPE. The largest emitted default single function frame
-is main.main at 192B; text rendering/page transfer use 72B frames and the Dense
+is main.main at 224B; text rendering uses 76B, page transfer 72B, and the Dense
 kernel has a 64B frame. No observed single emitted frame exceeds 256B. This is
 NOT a proven whole call-chain bound, and no stack high-water has been measured.
 

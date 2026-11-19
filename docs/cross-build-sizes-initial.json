@@ -1,0 +1,79 @@
+{
+  "ssd1306": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14480,
+    "static_ram_bytes": 652,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 756,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "ssd1309": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14284,
+    "static_ram_bytes": 652,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 756,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "ssd1315": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14480,
+    "static_ram_bytes": 652,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 756,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "sh1106": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14296,
+    "static_ram_bytes": 652,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 756,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "benchmark": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 15096,
+    "static_ram_bytes": 740,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 668,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "diagnostic": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14392,
+    "static_ram_bytes": 704,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 704,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  },
+  "antialiased": {
+    "schema_version": 1,
+    "artifact": "ch32_mnist",
+    "flash_bytes": 14572,
+    "static_ram_bytes": 652,
+    "stack_allowance_bytes": 640,
+    "ram_margin_bytes": 756,
+    "flash_limit_bytes": 16320,
+    "ram_limit_bytes": 2048,
+    "hardware_measured": false
+  }
+}

@@ -1,4 +1,7 @@
-# Verification report — 2026-11-19
+# Verification report
+
+Current DRAW revision: [screenshots, tests, budgets and limitations](draw-ui.md).
+The earlier milestone records below are retained as historical evidence. — 2026-11-19
 
 ## Completed and checked
 
@@ -151,3 +154,11 @@ recovery and unchanged model golden logits. Default cross-build and final ELF
 budget checks pass: Flash 14,208 B, static SRAM 620 B, stack/ISR allowance 640 B.
 Actual rotary response, maximum usable rotation speed and input loss remain to
 be checked on the device. Ordinary output: zig-out/firmware/firmware.bin.
+
+## DRAW interaction revision
+
+See [draw-ui.md](draw-ui.md) for the before/after snapshots, exact command suite,
+current ELF resources and the combined Trace/benchmark capacity regression.
+Host tests and cross-builds passed. Model export bytes and all golden logits are
+unchanged. The updated UI/held-rotation gestures have not been flashed or timed
+on hardware in this revision.

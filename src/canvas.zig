@@ -82,9 +82,15 @@ pub const Turtle = struct {
         const x: u8 = @intCast(std.math.clamp(@as(i16, self.x) + dx[self.direction], 0, 15));
         const y: u8 = @intCast(std.math.clamp(@as(i16, self.y) + dy[self.direction], 0, 15));
         if (x == self.x and y == self.y) return false;
-        if (self.down) c.line(self.x, self.y, x, y);
+        const changed = self.down and (!c.get(self.x, self.y) or !c.get(x, y));
+        // A turtle move is always one adjacent cell, including diagonals.
+        // Its Bresenham path contains exactly these two endpoints.
+        if (self.down) {
+            c.set(self.x, self.y, true);
+            c.set(x, y, true);
+        }
         self.x = x;
         self.y = y;
-        return self.down;
+        return changed;
     }
 };

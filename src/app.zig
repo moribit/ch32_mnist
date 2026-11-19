@@ -12,6 +12,7 @@ pub const App = struct {
     turtle: canvas.Turtle = .{},
     undo_turtle: canvas.Turtle = .{},
     undo_valid: bool = false,
+    stroke_active: bool = false,
     input: [256]i8 = @splat(0),
     output: [10]i8 = @splat(0),
     ws: Model.Workspace = .{},
@@ -48,7 +49,10 @@ pub const App = struct {
     pub fn infer(self: *App) void {
         if (options.trace) Model.inferTraced(&self.input, &self.output, &self.ws, &self.trace) else Model.infer(&self.input, &self.output, &self.ws);
         self.valid = true;
-        self.reference_ok = self.source_sample and @import("std").mem.eql(i8, &self.output, &expected[self.sample_index]);
+        self.reference_ok = self.source_sample;
+        for (self.output, expected[self.sample_index]) |actual, reference| {
+            if (actual != reference) self.reference_ok = false;
+        }
         self.pending = false;
         self.dirty = true;
         self.inferences +%= 1;
@@ -79,6 +83,7 @@ pub const App = struct {
         self.valid = false;
     }
     pub fn clear(self: *App) void {
+        self.stroke_active = false;
         self.bitmap.clear();
         self.source_sample = false;
         @memset(&self.input, @import("preprocess.zig").zero);
@@ -95,33 +100,62 @@ pub const App = struct {
     }
     fn resumeDraw(self: *App, now: u32) void {
         self.mode = .draw;
-        self.source_sample = false;
-        self.valid = false;
-        self.pending = !self.bitmap.empty();
-        self.changed = now;
+        if (self.source_sample) {
+            self.source_sample = false;
+            self.valid = false;
+            self.pending = !self.bitmap.empty();
+            self.changed = now;
+        }
     }
     pub fn due(self: *const App, now: u32) bool {
-        return !self.menu and self.pending and (self.mode == .sample or now -% self.changed >= 600);
+        return !self.menu and !self.stroke_active and self.pending and (self.mode == .sample or now -% self.changed >= 600);
+    }
+    fn saveUndo(self: *App) void {
+        self.undo_bitmap = self.bitmap;
+        self.undo_turtle = self.turtle;
+        self.undo_valid = true;
+    }
+    fn move(self: *App, d: i8, now: u32) void {
+        const direction = self.turtle.direction;
+        if (d < 0) self.turtle.rotate(4);
+        const changed = self.turtle.advance(&self.bitmap);
+        self.turtle.direction = direction;
+        if (changed) {
+            self.source_sample = false;
+            self.pending = true;
+            self.valid = false;
+            self.changed = now;
+        }
+    }
+    fn rotate(self: *App, d: i8) void {
+        if (self.menu) {
+            self.item = @intCast(@mod(@as(i16, self.item) + d, 7));
+        } else switch (self.mode) {
+            .draw => self.turtle.rotate(d),
+            .sample => {
+                self.sample_index ^= 1;
+                self.sample();
+            },
+            .inspect => self.selected = @intCast(@mod(@as(i16, self.selected) + d, 10)),
+        }
     }
     pub fn event(self: *App, e: @import("input.zig").Event, now: u32) void {
         self.dirty = true;
         switch (e) {
+            .stroke_end => self.stroke_active = false,
+            .stroke => |d| {
+                if (!self.menu and self.mode == .draw) {
+                    if (!self.stroke_active) self.saveUndo();
+                    self.stroke_active = true;
+                    var n: i16 = @intCast(@abs(d));
+                    while (n > 0) : (n -= 1) self.move(d, now);
+                } else self.rotate(d);
+            },
             .long_press => {
                 self.menu = !self.menu;
                 self.item = 0;
             },
-            .rotate => |d| {
-                if (self.menu) {
-                    self.item = @intCast(@mod(@as(i16, self.item) + d, 7));
-                } else switch (self.mode) {
-                    .draw => self.turtle.rotate(d),
-                    .sample => {
-                        self.sample_index ^= 1;
-                        self.sample();
-                    },
-                    .inspect => self.selected = @intCast(@mod(@as(i16, self.selected) + d, 10)),
-                }
-            },
+            .rotate => |d| self.rotate(d),
             .click => {
                 if (self.menu) {
                     self.menu = false;
@@ -137,7 +171,7 @@ pub const App = struct {
                                 self.turtle = self.undo_turtle;
                                 self.undo_valid = false;
                                 self.valid = false;
-                                self.pending = true;
+                                self.pending = !self.bitmap.empty();
                                 self.changed = now;
                             }
                             self.resumeDraw(now);
@@ -153,15 +187,8 @@ pub const App = struct {
                     }
                 } else switch (self.mode) {
                     .draw => {
-                        self.undo_bitmap = self.bitmap;
-                        self.undo_turtle = self.turtle;
-                        self.undo_valid = true;
-                        if (self.turtle.advance(&self.bitmap)) {
-                            self.source_sample = false;
-                            self.pending = true;
-                            self.valid = false;
-                            self.changed = now;
-                        }
+                        self.saveUndo();
+                        self.move(1, now);
                     },
                     .sample => self.mode = .inspect,
                     .inspect => self.resumeDraw(now),

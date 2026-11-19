@@ -6,22 +6,30 @@ const options = @import("options");
 pub const ch32fun_ssd1306_buffer_mode: fun.ssd1306.BufferMode = .page;
 pub const ch32fun_swio_log_enabled = false;
 var app: App = @import("std").mem.zeroes(App);
-var encoder: input.Encoder = .{};
-var button: input.Button = .{};
-var rotation: i16 = 0;
-var lost: u16 = 0;
+var controls: input.Controller = .{};
+var last_cycle: u32 = 0;
+var remainder: u32 = 0;
+var milliseconds: u32 = 0;
+fn nowMs() u32 {
+    const now = fun.time.nowCycles();
+    const delta = now -% last_cycle;
+    last_cycle = now;
+    milliseconds +%= delta / 48000;
+    remainder += delta % 48000;
+    if (remainder >= 48000) {
+        milliseconds +%= 1;
+        remainder -= 48000;
+    }
+    return milliseconds;
+}
 const a = fun.gpio.pin(.A, 2);
 const b = fun.gpio.pin(.D, 5);
 const sw = fun.gpio.pin(.C, 4);
 fn state() u2 {
     return (@as(u2, @intFromBool(a.read())) << 1) | @as(u2, @intFromBool(b.read()));
 }
-// Only called from the main loop; no encoder interrupt dependency.
 fn pollEncoder() void {
-    const delta = encoder.update(state());
-    const old = rotation;
-    const next = @addWithOverflow(old, @as(i16, delta));
-    if (next[1] == 0) rotation = next[0] else lost +|= 1;
+    controls.sample(state(), !sw.read(), nowMs());
 }
 const Draw = struct {
     pub fn pixel(x: i16, y: i16, on: bool) void {
@@ -75,7 +83,7 @@ pub fn main() noreturn {
         pin.configure(.input_pull);
         pin.write(true);
     }
-    encoder.previous = state();
+    controls.encoder.previous = state();
     if (options.benchmark) @import("stack_monitor.zig").init();
     mnist_metrics.model_id = @import("mnist_model").model_id;
     if (options.diagnostic) app.sample();
@@ -90,27 +98,11 @@ pub fn main() noreturn {
         fun.i2c.writeBlocking7bit(@backingInt(fun.ssd1306.currentAddress()), &clock) catch fail();
         fun.i2c.writeBlocking7bit(@backingInt(fun.ssd1306.currentAddress()), &vcom) catch fail();
     }
-    var last = fun.time.nowCycles();
-    var remainder: u32 = 0;
-    var ms: u32 = 0;
+    last_cycle = fun.time.nowCycles();
     while (true) {
-        const now = fun.time.nowCycles();
-        const delta = now -% last;
-        last = now;
-        ms +%= delta / 48000;
-        remainder += delta % 48000;
-        ms +%= remainder / 48000;
-        remainder %= 48000;
         if (!options.diagnostic) pollEncoder();
-        const turns = rotation;
-        rotation = 0;
-        var todo = turns;
-        while (todo != 0) {
-            const d: i8 = if (todo > 0) 1 else -1;
-            app.event(.{ .rotate = d }, ms);
-            todo -= d;
-        }
-        if (button.update(!sw.read(), ms)) |e| app.event(e, ms);
+        while (controls.pop()) |record| app.event(record.event, record.at);
+        const ms = nowMs();
         if (app.due(ms)) predict();
         if (options.benchmark and app.valid and app.inferences == 1) {
             timing = @import("cycle_benchmark").measure(application.Model, Clock, &app.input, &app.output, &app.ws, &measurements);
@@ -151,8 +143,8 @@ pub fn main() noreturn {
             metrics.reference_ok = @intFromBool(app.reference_ok);
             metrics.logits = app.output;
             if (options.benchmark) metrics.stack_upper = @import("stack_monitor.zig").highWaterUpperBound();
-            metrics.lost = (@as(*volatile u16, &lost)).*;
-            metrics.invalid = encoder.invalid;
+            metrics.lost = controls.lost;
+            metrics.invalid = controls.encoder.invalid;
         }
     }
 }

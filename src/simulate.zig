@@ -8,6 +8,23 @@ pub fn main(init: std.process.Init) !void {
     var a: A.App = .{};
     a.sample();
     a.predict();
+    if (args.len == 2 and std.mem.eql(u8, args[1], "benchmark")) {
+        var report: std.Io.Writer.Allocating = .init(init.arena.allocator());
+        try report.writer.writeAll("scene,iterations,host_ns_per_full_draw\n");
+        inline for (.{ A.Mode.draw, A.Mode.sample, A.Mode.inspect }) |mode| {
+            a.mode = mode;
+            const start = std.Io.Clock.awake.now(init.io);
+            for (0..2000) |i| {
+                @memset(&surface.frame, 0);
+                a.turtle.x = @intCast(i % 16);
+                @import("ui.zig").draw(surface, &a);
+            }
+            const elapsed = start.durationTo(std.Io.Clock.awake.now(init.io)).toNanoseconds();
+            try report.writer.print("{s},2000,{d}\n", .{ @tagName(mode), @divTrunc(elapsed, 2000) });
+        }
+        try std.Io.File.stdout().writeStreamingAll(init.io, report.written());
+        return;
+    }
     if (args.len == 2 and std.mem.eql(u8, args[1], "golden")) {
         var report: std.Io.Writer.Allocating = .init(init.arena.allocator());
         try report.writer.writeAll("model_id,sample,q0,q1,q2,q3,q4,q5,q6,q7,q8,q9\n");
@@ -23,7 +40,26 @@ pub fn main(init: std.process.Init) !void {
         return;
     }
     if (args.len == 3) {
-        if (std.mem.eql(u8, args[1], "inspect")) a.mode = .inspect else if (!std.mem.eql(u8, args[1], "sample")) return error.UnknownScene;
+        if (std.mem.startsWith(u8, args[1], "draw-") or std.mem.eql(u8, args[1], "menu")) {
+            a.clear();
+            const scene = args[1];
+            if (std.mem.eql(u8, scene, "draw-result")) {
+                for (a.input, 0..) |_, i| a.bitmap.set(@intCast(i % 16), @intCast(i / 16), A.samples[0][i] > 32);
+                a.predict();
+            } else if (std.mem.eql(u8, scene, "draw-pending") or std.mem.eql(u8, scene, "draw-down") or std.mem.eql(u8, scene, "draw-up")) {
+                a.bitmap.line(4, 3, 11, 3);
+                a.bitmap.line(11, 3, 5, 13);
+                a.pending = true;
+                if (std.mem.eql(u8, scene, "draw-up")) a.turtle.down = false;
+            } else if (std.mem.eql(u8, scene, "draw-edge")) {
+                a.turtle.x = 15;
+                a.turtle.y = 0;
+                a.turtle.direction = 1;
+            } else if (std.mem.eql(u8, scene, "menu")) {
+                a.menu = true;
+                a.item = 1;
+            } else if (!std.mem.eql(u8, scene, "draw-empty")) return error.UnknownScene;
+        } else if (std.mem.eql(u8, args[1], "inspect")) a.mode = .inspect else if (!std.mem.eql(u8, args[1], "sample")) return error.UnknownScene;
         @import("ui.zig").draw(surface, &a);
         var file = try std.Io.Dir.cwd().createFile(init.io, args[2], .{});
         defer file.close(init.io);

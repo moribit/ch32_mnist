@@ -1,25 +1,58 @@
 # Controls
 
+[日本語](controls_ja.md) · [DRAW screenshots and verification](draw-ui.md)
+
 Default: DRAW, cursor (7,7), NORTH, PEN DOWN, normalized preprocessing.
 
-- One detent rotates direction 45 degrees: N NE E SE S SW W NW.
-- Click advances one cell, clamped to 0..15. PEN DOWN draws; PEN UP only moves.
-- Hold 700ms opens the menu once. Rotate selects; click confirms.
-- RESUME returns to the retained drawing; PEN UP-DOWN toggles pen state.
-- UNDO restores the previous bitmap and cursor once (32-byte bitmap history).
-- PREDICT requests inference immediately. Changed drawings also predict after
-  600ms idle; rotation/cursor overlays never become input pixels.
-- CLEAR resets drawing, undo and result. No double click or continuous drawing.
-- SAMPLE loads either bundled validation vector (original indices 0 and 7).
-  Rotate changes sample; click opens INSPECT; hold opens menu. PASS means every
-  logit matched the model's host reference, not that a ground-truth label is known.
-- INSPECT shows ten raw logits, min/max relative bars, prediction, margin and
-  inference microseconds. Rotate selects an output, click returns to DRAW.
-  Equal logits make empty bars; logits and margins are not probabilities.
-- -Dtrace=true adds the actual 32 hidden activations (8x4); the default omits them.
-  -Ddiagnostic=true disables encoder acquisition, preserves SWIO and boots SAMPLE.
+| Input | DRAW action |
+|---|---|
+| Rotate, button released | Turn the direction by 45 degrees |
+| Short click | Advance one cell |
+| Hold and rotate positive / negative | Advance / move backwards without turning |
+| Hold 700ms without rotation | Open or close MENU |
 
-No results are shown for an empty canvas. Sample browsing preserves the drawing,
-but returning to DRAW invalidates the SAMPLE prediction and schedules the retained
-drawing as appropriate. Inference timing is displayed as -- until hardware supplies
-it; a host PBM has no fabricated device timing.
+The decoder retains Mopping_rotaly's two-edge setting. Physical direction and
+steps per detent depend on wiring/encoder type and require device verification.
+With PEN DOWN the path is drawn; PEN UP moves only the cursor. Coordinates clamp
+at the canvas edge. A click is one UNDO operation; all moves in one held gesture
+share one UNDO snapshot. Opposite rotations are processed in order, not cancelled.
+
+Held rotation consumes the click and long press. Release never adds an extra
+step. Once a long press opens MENU, further rotation during that press selects
+menu items; it cannot draw. Debounce is 20ms: uncertain boundary rotations and
+partial quadrature steps are discarded instead of assigned to the wrong gesture.
+
+MENU keeps RESUME, PEN UP/DOWN, UNDO, PREDICT, CLEAR, SAMPLE and INSPECT. The selected
+row is inverted. The PEN item names the next action. Long press closes MENU without
+changing the retained mode/canvas/result. CLEAR remains immediate, with no new
+confirmation workflow. RESUME explicitly returns to DRAW.
+
+The left 48×48 image is the 16×16 bitmap at 3× scale. The square cursor and 8-way
+arrow are display overlays, never model input. At an outward boundary, the arrow
+finishes at the cursor, retaining its head within the canvas area. A filled/hollow
+circle indicates PEN DOWN/UP. The right side contains only prediction information:
+`--` for empty, three dots for pending input, or a 5×7 digit enlarged to 20×28px.
+
+Only changes to bitmap pixels invalidate prediction. Direction, pen toggling,
+PEN UP motion, blocked edge motion and redrawing existing ink keep the result.
+Automatic inference waits 600ms after the last bitmap change and until a held
+stroke is released. PREDICT still requests an immediate inference outside MENU.
+SAMPLE inputs remain the two bundled validation vectors (original indices 0 and
+7): rotate browses, click opens INSPECT. INSPECT rotates its selected output and
+click returns to the retained drawing. PASS means all reference logits match,
+not ground-truth classification accuracy. Logits and margins are not probabilities.
+`-Dtrace=true` adds actual hidden activations; no fake timing is shown in host PBMs.
+
+## Input scheduling and limits
+
+The current firmware polls GPIO; it does not use encoder EXTI. Main and each 6ms
+window after a page transfer sample the encoder and button together. A four-record
+queue stores semantic events and 32-bit acquisition times. App changes are applied
+only after the immutable eight-page picture loop. No framebuffer/history is added.
+
+If the queue fills, queued events are discarded and the gesture is ended; `lost`
+in the metrics increments. A held gesture is suppressed until release. Unheld
+rotation recovers after the queue drains. This intentionally loses excessive input
+rather than inventing clicks, reordering direction changes or leaving inference
+permanently blocked. Gaps during I2C/render/inference and very fast motion can still
+lose physical edges. This is not a loss-free input claim.
