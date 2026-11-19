@@ -5,6 +5,7 @@ const options = @import("options");
 pub const Model = gen.Model;
 pub const samples = [2][256]i8{ gen.inputs[0], gen.inputs[7] };
 pub const expected = [2][10]i8{ gen.expected[0], gen.expected[7] };
+pub const inference_delay_ms: u32 = 100;
 pub const Mode = enum { draw, sample, inspect };
 pub const App = struct {
     bitmap: canvas.Canvas = .{},
@@ -108,7 +109,7 @@ pub const App = struct {
         }
     }
     pub fn due(self: *const App, now: u32) bool {
-        return !self.menu and !self.stroke_active and self.pending and (self.mode == .sample or now -% self.changed >= 600);
+        return !self.menu and !self.stroke_active and self.pending and (self.mode == .sample or now -% self.changed >= inference_delay_ms);
     }
     fn saveUndo(self: *App) void {
         self.undo_bitmap = self.bitmap;
@@ -178,7 +179,7 @@ pub const App = struct {
                         },
                         3 => {
                             self.pending = true;
-                            self.changed = now -% 600;
+                            self.changed = now -% inference_delay_ms;
                         },
                         4 => self.clear(),
                         5 => self.sample(),

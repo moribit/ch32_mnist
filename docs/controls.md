@@ -35,7 +35,7 @@ circle indicates PEN DOWN/UP. The right side contains only prediction informatio
 
 Only changes to bitmap pixels invalidate prediction. Direction, pen toggling,
 PEN UP motion, blocked edge motion and redrawing existing ink keep the result.
-Automatic inference waits 600ms after the last bitmap change and until a held
+Automatic inference waits 100ms after the last bitmap change and until a held
 stroke is released. PREDICT still requests an immediate inference outside MENU.
 SAMPLE inputs remain the two bundled validation vectors (original indices 0 and
 7): rotate browses, click opens INSPECT. INSPECT rotates its selected output and

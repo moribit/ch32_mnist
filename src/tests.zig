@@ -108,7 +108,7 @@ test "app sample, blank, dirty inference, menu, undo, source and wrap" {
     a.turtle.direction = 2;
     a.event(.click, 0xfffffff0);
     try std.testing.expect(a.pending);
-    try std.testing.expect(!a.due(100));
+    try std.testing.expect(!a.due(50));
     try std.testing.expect(a.due(700));
     a.event(.long_press, 700);
     a.item = 2;
@@ -306,7 +306,7 @@ test "debounce boundaries, long menu latch, queue ordering and overflow fail clo
     drain(&cn, &a);
     try std.testing.expect(!a.stroke_active);
 }
-test "gesture timing wraps, short press remains one step and image change waits 600ms" {
+test "gesture timing wraps, short press remains one step and image change waits 100ms" {
     var cn: input.Controller = .{};
     var a: application.App = .{};
     cn.sample(3, true, 0xffffffe0);
@@ -316,8 +316,8 @@ test "gesture timing wraps, short press remains one step and image change waits 
     cn.sample(3, false, 25);
     drain(&cn, &a);
     try std.testing.expect(!a.stroke_active);
-    try std.testing.expect(!a.due(500));
-    try std.testing.expect(a.due(600));
+    try std.testing.expect(!a.due(50));
+    try std.testing.expect(a.due(100));
     cn = .{};
     a = .{};
     cn.sample(3, true, 0);
@@ -470,4 +470,23 @@ test "redrawing existing ink keeps inference current" {
     try std.testing.expect(!a.pending);
     try std.testing.expectEqualSlices(i8, &before, &a.output);
     try std.testing.expectEqual(count, a.inferences);
+}
+
+test "automatic inference starts at exactly 100ms, explicit predict bypasses wait" {
+    var a: application.App = .{};
+    a.event(.click, 1000);
+    try std.testing.expect(!a.due(1099));
+    try std.testing.expect(a.due(1100));
+    a.stroke_active = true;
+    try std.testing.expect(!a.due(1100));
+    a.event(.stroke_end, 1101);
+    try std.testing.expect(a.due(1101));
+    a.menu = true;
+    a.item = 3;
+    a.event(.click, 1102);
+    try std.testing.expect(a.due(1102));
+    a.clear();
+    a.event(.click, 0xfffffff0);
+    try std.testing.expect(!a.due(83));
+    try std.testing.expect(a.due(84));
 }

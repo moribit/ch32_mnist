@@ -62,7 +62,7 @@ about general handwriting recognition. MLP16 variants are not implemented.
 
 DRAW: turn selects one of eight directions; click advances one cell. Hold 700ms
 opens MENU: RESUME, PEN UP-DOWN, UNDO, PREDICT, CLEAR, SAMPLE, INSPECT.
-Drawings classify after 600ms idle or explicit PREDICT. SAMPLE turns switch between
+Drawings classify after 100ms idle or explicit PREDICT. SAMPLE turns switch between
 two reference images; PASS checks all logits. INSPECT shows relative score bars,
 margin, selected output, device timing and optionally real hidden activations.
 Logits are not probabilities. Full [controls](docs/controls.md).

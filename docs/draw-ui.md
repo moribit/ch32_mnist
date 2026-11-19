@@ -92,7 +92,7 @@ filled canvases, no out-of-range pixels, full rendering versus eight page passes
 state immutability, distinct digit glyphs, pending/empty and inverted MENU.
 Input tests cover clicks, long press, signed held movement, one-gesture UNDO,
 release suppression, debounce boundaries, phase resets, order, overflow recovery,
-wraparound, non-changing operations and the 600ms inference deadline.
+wraparound, non-changing operations and the 100ms inference deadline.
 
 ## Timing and hardware status
 

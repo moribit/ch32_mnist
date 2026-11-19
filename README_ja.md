@@ -61,7 +61,7 @@ MLP16の選択肢は、MLP32 int4が収まったため追加していません�
 
 DRAWでは回転で8方向を選び、短押しで1マス進みます。700ms長押しでMENUを開き、
 RESUME、PEN UP-DOWN、UNDO、PREDICT、CLEAR、SAMPLE、INSPECTを選びます。
-描画変更から600ms停止後、またはPREDICTで推論します。SAMPLEは既知入力2件を切り替え、
+描画変更から100ms停止後、またはPREDICTで推論します。SAMPLEは既知入力2件を切り替え、
 PASSは全Logitの参照一致を意味します。INSPECTでは相対Logitバー、Margin、選択出力、
 実機推論時間、必要に応じて実際のHidden Activationを表示します。Logitは確率ではありません。
 
