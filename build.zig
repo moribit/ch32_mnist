@@ -7,9 +7,10 @@ pub fn build(b: *std.Build) void {
     const choice = b.option(ModelChoice, "model", "Bundled MLP32 int8 or exported int4") orelse .@"mlp32-int4";
     const Display = enum { ssd1306, ssd1309, ssd1315, sh1106 };
     const display = b.option(Display, "display", "OLED controller") orelse .sh1106;
+    const display_test = b.option(bool, "display-test", "OLED-only full-buffer diagnostic; no encoder or inference") orelse false;
     const dep = b.dependency("zinn", .{});
     const hal = b.dependency("ch32fun_zig", .{});
-    const fw = ch32.addFirmware(b, hal, .{ .name = "ch32_mnist", .root_source_file = b.path("src/main.zig"), .optimize = optimize, .runtime = .ch32fun_exti });
+    const fw = ch32.addFirmware(b, hal, .{ .name = "ch32_mnist", .root_source_file = b.path(if (display_test) "src/display_test.zig" else "src/main.zig"), .optimize = optimize, .runtime = .ch32fun_exti });
     const options = b.addOptions();
     options.addOption([]const u8, "display", @tagName(display));
     const Preprocess = enum { direct, centered, normalized, antialiased };

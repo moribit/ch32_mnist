@@ -114,3 +114,16 @@ Verify stack/IRQ margin and input capture at worst-case rotation. Collect actual
 drawn digits, compare preprocessing on held-out device inputs, then consider a
 larger representative calibration set. MLP16 fallback, continuous drawing, a GUI
 simulator and physical Linux test execution were not added.
+
+## OLED corruption investigation
+
+User reports: SSD1306/SSD1309/SSD1315/SH1106 selections did not produce a correct display; SSD1306 showed faint/partial PEN DOWN text. Controller selection alone has not resolved the problem.
+
+An isolation firmware uses the HAL full framebuffer and `refresh()` path used by Mopping_rotaly, with no inference, encoder GPIO configuration, or application interrupts. It preserves SWIO and shows a border, OLED TEST text, controller name, bars, and a marker toggling every 500 ms. This is a diagnostic, not a confirmed fix.
+
+```sh
+zig build -Ddisplay=sh1106 -Ddisplay-test=true --prefix zig-out/display-test
+~/ch32fun/minichlink/minichlink -w zig-out/display-test/firmware/firmware.bin flash -b
+```
+
+Cross-build verified: Flash 4,356 B; static SRAM 1,036 B; stack/ISR allowance 640 B (not measured). Hardware output remains unverified. The ordinary firmware in `zig-out/firmware/` is not replaced by this command. Normal firmware still uses the memory-saving page buffer.
