@@ -93,8 +93,11 @@ pub fn main() noreturn {
     const controller: fun.ssd1306.Controller = if (@import("std").mem.eql(u8, options.display, "sh1106")) .sh1106 else if (@import("std").mem.eql(u8, options.display, "ssd1309")) .ssd1309 else .ssd1306;
     fun.ssd1306.initPanelController(controller) catch fail();
     if (controller == .ssd1309) {
-        const cmd = [3]u8{ 0, 0xd5, 0xf0 };
-        fun.i2c.writeBlocking7bit(@backingInt(fun.ssd1306.currentAddress()), &cmd) catch fail();
+        // Match the SSD1309 panel setup used by Mopping_rotaly.
+        const clock = [3]u8{ 0, 0xd5, 0xf0 };
+        const vcom = [3]u8{ 0, 0xdb, 0x34 };
+        fun.i2c.writeBlocking7bit(@backingInt(fun.ssd1306.currentAddress()), &clock) catch fail();
+        fun.i2c.writeBlocking7bit(@backingInt(fun.ssd1306.currentAddress()), &vcom) catch fail();
     }
     var last = fun.time.nowCycles();
     var remainder: u32 = 0;

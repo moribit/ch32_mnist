@@ -89,3 +89,14 @@ Original application code: [MIT](LICENSE). Zinn and ch32fun_zig retain their MIT
 licenses; [third-party notices](THIRD_PARTY.md). No upstream source changes or
 GitHub publication are part of this project. Benchmark results and unmeasured
 items are explicitly separated in the verification report.
+
+### SSD1309 panel configuration
+
+The default controller is SSD1309. Build and write the matching firmware:
+
+```sh
+zig build -Ddisplay=ssd1309
+~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
+```
+
+Other panels require an explicit `-Ddisplay=ssd1306`, `ssd1315`, or `sh1106`. SSD1309 initialization matches the clock and VCOM settings in Mopping_rotaly. Flashing has been reported successful; correct OLED output still requires hardware confirmation.
