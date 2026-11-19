@@ -99,3 +99,5 @@ zig build
 ```
 
 The standard build installs ELF, HEX and BIN files under `zig-out/firmware/`. No custom output prefix is needed.
+
+Rotary input follows Mopping_rotaly: GPIO polling with two valid phase edges per event. A 6ms polling window follows each OLED page transfer. Fast-rotation edge loss and the revised device response still require hardware confirmation.

@@ -16,15 +16,12 @@ const sw = fun.gpio.pin(.C, 4);
 fn state() u2 {
     return (@as(u2, @intFromBool(a.read())) << 1) | @as(u2, @intFromBool(b.read()));
 }
-fn edge(_: u8) callconv(.c) void {
+// Only called from the main loop; no encoder interrupt dependency.
+fn pollEncoder() void {
     const delta = encoder.update(state());
-    const p: *volatile i16 = &rotation;
-    const old = p.*;
+    const old = rotation;
     const next = @addWithOverflow(old, @as(i16, delta));
-    if (next[1] == 0) p.* = next[0] else {
-        const q: *volatile u16 = &lost;
-        q.* +|= 1;
-    }
+    if (next[1] == 0) rotation = next[0] else lost +|= 1;
 }
 const Draw = struct {
     pub fn pixel(x: i16, y: i16, on: bool) void {
@@ -81,13 +78,7 @@ pub fn main() noreturn {
     encoder.previous = state();
     if (options.benchmark) @import("stack_monitor.zig").init();
     mnist_metrics.model_id = @import("mnist_model").model_id;
-    if (!options.diagnostic) {
-        fun.exti.config(.{ .port = .A, .line = 2, .trigger = .both, .handler = edge });
-        fun.exti.config(.{ .port = .D, .line = 5, .trigger = .both, .handler = edge });
-        fun.exti.enable(2);
-        fun.exti.enable(5);
-    } else app.sample();
-    fun.system.enableInterrupts();
+    if (options.diagnostic) app.sample();
     fun.ssd1306.initI2c() catch fail();
     fun.i2c.setBusClockHz(400_000);
     const controller: fun.ssd1306.Controller = if (@import("std").mem.eql(u8, options.display, "sh1106")) .sh1106 else if (@import("std").mem.eql(u8, options.display, "ssd1309")) .ssd1309 else .ssd1306;
@@ -110,13 +101,9 @@ pub fn main() noreturn {
         remainder += delta % 48000;
         ms +%= remainder / 48000;
         remainder %= 48000;
-        fun.system.disableInterrupts();
-        asm volatile ("" ::: .{ .memory = true });
-        const ptr: *volatile i16 = &rotation;
-        const turns = ptr.*;
-        ptr.* = 0;
-        asm volatile ("" ::: .{ .memory = true });
-        fun.system.enableInterrupts();
+        if (!options.diagnostic) pollEncoder();
+        const turns = rotation;
+        rotation = 0;
         var todo = turns;
         while (todo != 0) {
             const d: i8 = if (todo > 0) 1 else -1;
@@ -146,6 +133,12 @@ pub fn main() noreturn {
                 const tt = fun.time.nowCycles();
                 const more = fun.ssd1306.nextPage() catch fail();
                 transfer +%= fun.time.nowCycles() -% tt;
+                // Keep a fast polling window between page transfers. Do not
+                // mutate App until the complete picture loop has finished.
+                if (!options.diagnostic) {
+                    const polling_start = fun.time.nowCycles();
+                    while (fun.time.elapsedUsSince(polling_start) < 6000) pollEncoder();
+                }
                 if (!more) break;
             }
             app.render_cycles = draw_cycles;
@@ -157,13 +150,9 @@ pub fn main() noreturn {
             metrics.transfer = transfer;
             metrics.reference_ok = @intFromBool(app.reference_ok);
             metrics.logits = app.output;
-            fun.system.disableInterrupts();
-            asm volatile ("" ::: .{ .memory = true });
             if (options.benchmark) metrics.stack_upper = @import("stack_monitor.zig").highWaterUpperBound();
             metrics.lost = (@as(*volatile u16, &lost)).*;
             metrics.invalid = encoder.invalid;
-            asm volatile ("" ::: .{ .memory = true });
-            fun.system.enableInterrupts();
         }
     }
 }

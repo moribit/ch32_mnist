@@ -43,11 +43,14 @@ and renderer here are original small application code, not a second ML runtime.
 
 ## Scheduling / ownership
 
-Encoder EXTI on PA2 and PD5 runs during inference and blocking I2C transfers.
-ISR only samples GPIO, decodes transitions and accumulates signed detents; invalid
-transitions and saturation are counted. Main drains the counter with interrupts
-briefly masked, then applies events. No OLED or inference runs in an ISR.
-Four valid phase edges form one detent; electrical direction depends on A/B wiring.
+Encoder PA2/PD5 is polled from main, matching Mopping_rotaly. Two valid
+Gray-code edges produce a rotation event; bounce/reversal cancels pending phase
+and invalid transitions reset it. Events are accumulated with a saturating
+counter and applied outside the OLED picture loop. No encoder IRQ is enabled.
+After each 128-byte page transfer, a 6ms fast polling window captures input while
+App remains immutable. There are still gaps during rendering, I2C and inference;
+fast rotation can lose edges and requires hardware evaluation. Electrical
+direction and events per physical detent depend on the encoder and A/B wiring.
 
 Button polling uses main, 20ms debounce and 700ms long press. A long press is
 emitted once, with no release click. Its maximum sampling gap includes the OLED
@@ -56,7 +59,7 @@ physical validation item rather than a claimed loss-free design.
 
 The OLED driver really supports .page, firstPage/nextPage/writePage. Exactly one
 128-byte hardware-page buffer is used. Eight pages are redrawn from the same
-immutable App state. ISR does not mutate App. Dirty updates only; no cursor blink,
+immutable App state. Polling windows do not mutate App. Dirty updates only; no cursor blink,
 idle bus traffic or per-frame inference. I2C is configured to 400kHz. SSD1315 uses
 the SSD1306-compatible command path; SH1106 uses its actual +2-column/page handling.
 SSD1309 uses its native initialization plus oscillator/VCOM adjustments.

@@ -135,3 +135,19 @@ zig build -Ddisplay=ssd1306 -Ddisplay-test=true --prefix zig-out/display-test
 ```
 
 This cycles through all-on, alternating rows, inverted alternating rows and all-off every two seconds. `-Ddisplay-legacy=true` additionally selects the legacy entry and requires `-Ddisplay-test=true`; it omits normal memory/IRQ initialization and is strictly for comparison. Normal firmware retains the 128-byte page buffer and proper HAL startup.
+
+## Rotary input compatibility revision
+
+The user reported no rotation response on the display-working SSD1306 hardware.
+Compared with Mopping_rotaly, this application used EXTI acquisition and four
+edges per event, while Mopping used GPIO polling and two edges. The revised
+firmware matches the latter, polling in main and for 6ms after every OLED page
+transfer, deferring App changes until the complete picture is sent. This removes
+the encoder's EXTI dependency; it does not establish which previous difference
+caused the hardware symptom.
+
+Debug/ReleaseSafe host tests cover half cycles, bounce, reversal, invalid state
+recovery and unchanged model golden logits. Default cross-build and final ELF
+budget checks pass: Flash 14,208 B, static SRAM 620 B, stack/ISR allowance 640 B.
+Actual rotary response, maximum usable rotation speed and input loss remain to
+be checked on the device. Ordinary output: zig-out/firmware/firmware.bin.

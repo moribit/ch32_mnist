@@ -25,7 +25,7 @@ power-cycle/recover the target and program during the startup grace period using
 your programmer's documented recovery procedure. Never assume concurrent SWIO
 logging and Encoder B is supported.
 
-The explicit diagnostic build preserves SWIO, disables both encoder EXTI sources,
+The explicit diagnostic build preserves SWIO, disables encoder polling,
 and starts with a known SAMPLE for debugger inspection. Keep Encoder B isolated
 for the entire diagnostic session. The normal build boots DRAW.
 

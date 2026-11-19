@@ -48,8 +48,17 @@ NOT a proven whole call-chain bound, and no stack high-water has been measured.
 
 Reproduce assembly with zig build assembly (zig-out/reports/firmware.s). In
 -Dbenchmark=true, the optional watermark fills only unused SRAM below the current
-SP minus a 128B live-stack guard, after BSS and before enabling encoder interrupts.
+SP minus a 128B live-stack guard, after BSS and before starting encoder polling.
 The exported stack_upper is a conservative watermark observation including that
 guard. Scanning briefly masks IRQs; timing/overflow testing must acknowledge this
 benchmark-only perturbation. Neither the code nor these reservations establish
 physical memory safety without worst-case hardware high-water testing.
+
+## Rotary polling revision
+
+The default SSD1306 build after matching Mopping_rotaly input polling uses
+14,208 B Flash and 620 B static SRAM. The unchanged 512 B main + 128 B ISR
+allowance leaves 788 B RAM margin. The encoder no longer enables EXTI interrupts;
+the conservative ISR allowance is retained. Older assembly sizes above are
+historical observations, not a new whole-stack bound. Hardware rotation response
+and stack high-water remain unverified for this revision.

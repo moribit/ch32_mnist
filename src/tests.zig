@@ -8,7 +8,7 @@ test "encoder detents, bounce, invalid transition and reversal" {
     var e: input.Encoder = .{};
     var total: i32 = 0;
     for ([_]u2{ 2, 0, 1, 3 }) |s| total += e.update(s);
-    try std.testing.expectEqual(@as(i32, -1), total);
+    try std.testing.expectEqual(@as(i32, -2), total);
     for ([_]u2{ 1, 0, 2, 3 }) |s| total += e.update(s);
     try std.testing.expectEqual(@as(i32, 0), total);
     for ([_]u2{ 2, 3, 2, 3 }) |s| try std.testing.expectEqual(@as(i8, 0), e.update(s));
@@ -182,4 +182,26 @@ test "long release after a blocked poll never becomes a click; AA has partial co
         partial = partial or (q > pre.zero and q < pre.white);
     }
     try std.testing.expect(partial);
+}
+
+test "Mopping half-cycle steps and bounce recovery" {
+    var e: input.Encoder = .{};
+    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    try std.testing.expectEqual(@as(i8, -1), e.update(0));
+    try std.testing.expectEqual(@as(i8, 0), e.update(1));
+    try std.testing.expectEqual(@as(i8, -1), e.update(3));
+    try std.testing.expectEqual(@as(i8, 0), e.update(1));
+    try std.testing.expectEqual(@as(i8, 1), e.update(0));
+    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    try std.testing.expectEqual(@as(i8, 1), e.update(3));
+    // A bounce cancels the pending edge, not the next valid half-cycle.
+    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    try std.testing.expectEqual(@as(i8, 0), e.update(3));
+    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    try std.testing.expectEqual(@as(i8, -1), e.update(0));
+    // A skipped Gray state resets phase without inventing a turn.
+    try std.testing.expectEqual(@as(i8, 0), e.update(3));
+    try std.testing.expectEqual(@as(u16, 1), e.invalid);
+    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    try std.testing.expectEqual(@as(i8, -1), e.update(0));
 }
