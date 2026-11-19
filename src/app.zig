@@ -29,13 +29,15 @@ pub const App = struct {
     changed: u32 = 0,
     inferences: u32 = 0,
     cycles: u32 = 0,
-    cycles_valid:bool=false,
-    reference_ok:bool=false,
+    cycles_valid: bool = false,
+    reference_ok: bool = false,
     prep_cycles: u32 = 0,
     render_cycles: u32 = 0,
     transfer_cycles: u32 = 0,
     pub fn predict(self: *App) void {
-        if (!self.source_sample and !pre.run(&self.bitmap, &self.input, self.method)) {
+        if (!self.source_sample and !(switch (self.method) {
+            inline else => |method| pre.run(&self.bitmap, &self.input, method),
+        })) {
             self.valid = false;
             self.pending = false;
             self.dirty = true;
@@ -46,7 +48,7 @@ pub const App = struct {
     pub fn infer(self: *App) void {
         if (options.trace) Model.inferTraced(&self.input, &self.output, &self.ws, &self.trace) else Model.infer(&self.input, &self.output, &self.ws);
         self.valid = true;
-        self.reference_ok = self.source_sample and @import("std").mem.eql(i8,&self.output,&expected[self.sample_index]);
+        self.reference_ok = self.source_sample and @import("std").mem.eql(i8, &self.output, &expected[self.sample_index]);
         self.pending = false;
         self.dirty = true;
         self.inferences +%= 1;
@@ -126,7 +128,7 @@ pub const App = struct {
                     switch (self.item) {
                         0 => self.resumeDraw(now),
                         1 => {
-                            self.mode = .draw;
+                            self.resumeDraw(now);
                             self.turtle.down = !self.turtle.down;
                         },
                         2 => {
@@ -138,7 +140,7 @@ pub const App = struct {
                                 self.pending = true;
                                 self.changed = now;
                             }
-                            self.mode = .draw;
+                            self.resumeDraw(now);
                         },
                         3 => {
                             self.pending = true;

@@ -8,7 +8,7 @@ pub const zero: i8 = L.input_zero;
 fn quantize(coverage: u32) i8 {
     return @intCast(@as(i32, zero) + @divTrunc((@as(i32, white) - zero) * @as(i32, @intCast(coverage)) + 8, 16));
 }
-pub fn run(c: *const Canvas, out: *[256]i8, method: Method) bool {
+pub fn run(c: *const Canvas, out: *[256]i8, comptime method: Method) bool {
     @memset(out, zero);
     const box = c.bounds() orelse return false;
     const longest = @max(box.w, box.h);

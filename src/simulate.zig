@@ -8,6 +8,20 @@ pub fn main(init: std.process.Init) !void {
     var a: A.App = .{};
     a.sample();
     a.predict();
+    if (args.len == 2 and std.mem.eql(u8, args[1], "golden")) {
+        var report: std.Io.Writer.Allocating = .init(init.arena.allocator());
+        try report.writer.writeAll("model_id,sample,q0,q1,q2,q3,q4,q5,q6,q7,q8,q9\n");
+        for (0..2) |i| {
+            a.sample_index = @intCast(i);
+            a.sample();
+            a.predict();
+            try report.writer.print("{d},{d}", .{ @import("mnist_model").model_id, i });
+            for (a.output) |q| try report.writer.print(",{d}", .{q});
+            try report.writer.writeByte('\n');
+        }
+        try std.Io.File.stdout().writeStreamingAll(init.io, report.written());
+        return;
+    }
     if (args.len == 3) {
         if (std.mem.eql(u8, args[1], "inspect")) a.mode = .inspect else if (!std.mem.eql(u8, args[1], "sample")) return error.UnknownScene;
         @import("ui.zig").draw(surface, &a);
@@ -36,9 +50,12 @@ pub fn main(init: std.process.Init) !void {
                 if (mask & (@as(u7, 1) << @intCast(i)) != 0) {
                     const dx: i16 = if (variant == 1) -2 else 0;
                     const dy: i16 = if (variant == 1) -1 else 0;
-                    walk(&a,@intCast(line[0]+dx),@intCast(line[1]+dy),false);
-                    walk(&a,@intCast(line[2]+dx),@intCast(line[3]+dy),true);
-                    if (variant == 2) { walk(&a,@intCast(line[0]+1),@intCast(line[1]),false);walk(&a,@intCast(line[2]+1),@intCast(line[3]),true); }
+                    walk(&a, @intCast(line[0] + dx), @intCast(line[1] + dy), false);
+                    walk(&a, @intCast(line[2] + dx), @intCast(line[3] + dy), true);
+                    if (variant == 2) {
+                        walk(&a, @intCast(line[0] + 1), @intCast(line[1]), false);
+                        walk(&a, @intCast(line[2] + 1), @intCast(line[3]), true);
+                    }
                 }
             }
             inline for (.{ pre.Method.direct, pre.Method.centered, pre.Method.normalized, pre.Method.antialiased }) |method| {
@@ -51,11 +68,17 @@ pub fn main(init: std.process.Init) !void {
     try std.Io.File.stdout().writeStreamingAll(init.io, output.written());
 }
 
-fn walk(a:*A.App,x:u8,y:u8,down:bool) void {
- a.turtle.down=down;
- while(a.turtle.x!=x or a.turtle.y!=y){
-  const dx=std.math.sign(@as(i16,x)-a.turtle.x); const dy=std.math.sign(@as(i16,y)-a.turtle.y);
-  for(C.Turtle.dx,C.Turtle.dy,0..)|xx,yy,dir|{if(xx==dx and yy==dy){a.event(.{.rotate=@intCast(@as(i16,@intCast(dir))-a.turtle.direction)},0);break;}}
-  a.event(.click,0);
- }
+fn walk(a: *A.App, x: u8, y: u8, down: bool) void {
+    a.turtle.down = down;
+    while (a.turtle.x != x or a.turtle.y != y) {
+        const dx = std.math.sign(@as(i16, x) - a.turtle.x);
+        const dy = std.math.sign(@as(i16, y) - a.turtle.y);
+        for (C.Turtle.dx, C.Turtle.dy, 0..) |xx, yy, dir| {
+            if (xx == dx and yy == dy) {
+                a.event(.{ .rotate = @intCast(@as(i16, @intCast(dir)) - a.turtle.direction) }, 0);
+                break;
+            }
+        }
+        a.event(.click, 0);
+    }
 }

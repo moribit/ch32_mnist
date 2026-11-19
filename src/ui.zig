@@ -91,7 +91,9 @@ pub fn draw(comptime D: type, a: *const App) void {
             text(D, 0, 0, "NO RESULT", 1);
             return;
         }
-        text(D, 0, 0, "LOGITS - NOT PROBABILITY", 1);
+        text(D, 0, 0, "LOGITS NOT PROB", 1);
+        text(D, 88, 0, "P:", 1);
+        number(D, 100, 0, a.prediction());
         var lo: i16 = 127;
         var hi: i16 = -128;
         for (a.output) |v| {
@@ -102,6 +104,11 @@ pub fn draw(comptime D: type, a: *const App) void {
             const x: i16 = if (i < 5) 0 else 64;
             const y: i16 = 10 + @as(i16, @intCast(i % 5)) * 8;
             number(D, x, y, @intCast(i));
+            if (i == a.selected) {
+                D.pixel(x, y + 6, true);
+                D.pixel(x + 1, y + 6, true);
+                D.pixel(x + 2, y + 6, true);
+            }
             number(D, x + 9, y, v);
             const w: i16 = if (hi == lo) 0 else @intCast(@divTrunc((@as(i32, v) - lo) * 26, hi - lo));
             var j: i16 = 0;
@@ -110,7 +117,7 @@ pub fn draw(comptime D: type, a: *const App) void {
         text(D, 0, 52, "MARGIN", 1);
         if (a.valid) number(D, 28, 52, a.margin());
         text(D, 64, 52, "US", 1);
-        if (a.cycles_valid) number(D, 76, 52, @intCast(a.cycles / 48)) else text(D,76,52,"--",1);
+        if (a.cycles_valid) number(D, 76, 52, @intCast(a.cycles / 48)) else text(D, 76, 52, "--", 1);
         if (@import("options").trace) {
             for (a.trace.layer(0), 0..) |v, i| {
                 if (v > 0) {
@@ -143,8 +150,8 @@ pub fn draw(comptime D: type, a: *const App) void {
         text(D, 0, 0, "SAMPLE", 1);
         number(D, 63, 12, a.sample_index);
         text(D, 63, 21, "US", 1);
-        if (a.cycles_valid) number(D, 76, 21, @intCast(a.cycles / 48)) else text(D,76,21,"--",1);
-        if (a.valid) text(D,63,54,if (a.reference_ok) "PASS" else "FAIL",1);
+        if (a.cycles_valid) number(D, 76, 21, @intCast(a.cycles / 48)) else text(D, 76, 21, "--", 1);
+        if (a.valid) text(D, 63, 54, if (a.reference_ok) "PASS" else "FAIL", 1);
     }
     if (a.valid) {
         const b = [1]u8{'0' + a.prediction()};

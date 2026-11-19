@@ -139,3 +139,47 @@ test "canvas and UI only write inside display surface" {
     @import("ui.zig").draw(S, &app);
     try std.testing.expect(std.mem.indexOfNone(u8, &S.frame, &.{0}) != null);
 }
+
+test "menu transitions preserve input source and explicit predict is immediate" {
+    var a: application.App = .{};
+    a.sample();
+    a.predict();
+    try std.testing.expect(a.reference_ok);
+    a.event(.long_press, 30);
+    a.item = 1;
+    a.event(.click, 40);
+    try std.testing.expect(!a.source_sample);
+    try std.testing.expect(!a.valid);
+    a.turtle.down = true;
+    a.event(.click, 50);
+    const before = a.bitmap;
+    a.event(.click, 60);
+    a.event(.long_press, 70);
+    a.item = 2;
+    a.event(.click, 80);
+    try std.testing.expectEqualSlices(u8, &before.pixels, &a.bitmap.pixels);
+    a.event(.long_press, 90);
+    a.item = 3;
+    a.event(.click, 100);
+    try std.testing.expect(a.due(100));
+    a.predict();
+    a.clear();
+    for (a.trace.values) |v| try std.testing.expectEqual(@as(i8, 0), v);
+}
+test "long release after a blocked poll never becomes a click; AA has partial coverage" {
+    var b: input.Button = .{};
+    _ = b.update(true, 0);
+    _ = b.update(true, 20);
+    _ = b.update(false, 900);
+    try std.testing.expect(b.update(false, 920).? == .long_press);
+    try std.testing.expect(b.update(false, 940) == null);
+    var bitmap: c.Canvas = .{};
+    bitmap.line(2, 2, 6, 8);
+    var values: [256]i8 = undefined;
+    _ = pre.run(&bitmap, &values, .antialiased);
+    var partial = false;
+    for (values) |q| {
+        partial = partial or (q > pre.zero and q < pre.white);
+    }
+    try std.testing.expect(partial);
+}
