@@ -1,0 +1,4 @@
+.{ .name = .ch32_mnist, .version = "0.1.0", .fingerprint = 0x59a0f20d8e068053, .minimum_zig_version = "0.17.0", .dependencies = .{
+    .zinn = .{ .path = "../../../Users/mimoc/zinn" },
+    .ch32fun_zig = .{ .path = "../../../Users/mimoc/ch32fun_zig" },
+}, .paths = .{ "build.zig", "build.zig.zon", "src", "tools", "models", "docs", "README.md", "README_ja.md", "LICENSE" } }
