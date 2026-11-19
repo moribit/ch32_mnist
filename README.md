@@ -44,7 +44,7 @@ reserved Flash, 512B main stack allowance and 128B ISR allowance. These allowanc
 are not measured stack usage. See [memory budget](docs/memory-budget.md).
 
 ```sh
-zig build -Ddisplay=ssd1309
+zig build -Ddisplay=sh1106
 zig build -Ddisplay=ssd1315
 zig build -Ddisplay=sh1106
 zig build -Dmodel=mlp32-int4 -Dpreprocess=antialiased
@@ -54,7 +54,7 @@ zig build assembly
 ZIG=zig sh tools/verify.sh
 ```
 
-SSD1306 is default. All four controller paths are cross-build checked, not
+SH1106 is the default for this hardware. All four controller paths are cross-build checked, not
 physically validated. -Dpreprocess selects direct/centered/normalized/antialiased;
 normalized is the provisional default. The synthetic comparison is not a claim
 about general handwriting recognition. MLP16 variants are not implemented.
@@ -90,13 +90,13 @@ licenses; [third-party notices](THIRD_PARTY.md). No upstream source changes or
 GitHub publication are part of this project. Benchmark results and unmeasured
 items are explicitly separated in the verification report.
 
-### SSD1309 panel configuration
+### OLED controller selection
 
-The default controller is SSD1309. Build and write the matching firmware:
+This hardware previously used `-Ddisplay=sh1106` in Mopping_rotaly, so SH1106 is now the default. Use the same controller setting here; a module name alone does not establish controller compatibility.
 
 ```sh
-zig build -Ddisplay=ssd1309
+zig build -Ddisplay=sh1106
 ~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
 ```
 
-Other panels require an explicit `-Ddisplay=ssd1306`, `ssd1315`, or `sh1106`. SSD1309 initialization matches the clock and VCOM settings in Mopping_rotaly. Flashing has been reported successful; correct OLED output still requires hardware confirmation.
+The earlier SSD1309 firmware produced a blank screen according to the user. Correct display output with this SH1106 build remains to be confirmed on hardware.

@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
     const ModelChoice = enum { @"mlp32-int8", @"mlp32-int4" };
     const choice = b.option(ModelChoice, "model", "Bundled MLP32 int8 or exported int4") orelse .@"mlp32-int4";
     const Display = enum { ssd1306, ssd1309, ssd1315, sh1106 };
-    const display = b.option(Display, "display", "OLED controller") orelse .ssd1309;
+    const display = b.option(Display, "display", "OLED controller") orelse .sh1106;
     const dep = b.dependency("zinn", .{});
     const hal = b.dependency("ch32fun_zig", .{});
     const fw = ch32.addFirmware(b, hal, .{ .name = "ch32_mnist", .root_source_file = b.path("src/main.zig"), .optimize = optimize, .runtime = .ch32fun_exti });

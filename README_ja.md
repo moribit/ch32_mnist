@@ -43,7 +43,7 @@ zig build simulate > zig-out/preprocessing.csv
 予算は実測したスタック使用量ではありません。[メモリ設計](docs/memory-budget.md)。
 
 ```sh
-zig build -Ddisplay=ssd1309
+zig build -Ddisplay=sh1106
 zig build -Ddisplay=ssd1315
 zig build -Ddisplay=sh1106
 zig build -Dmodel=mlp32-int4 -Dpreprocess=antialiased
@@ -95,13 +95,13 @@ Build／test／sizeは物理デバイスへ書き込みません。
 本体の新規コードは[MIT](LICENSE)。依存ライブラリはそれぞれのMITライセンスに従います。
 [第三者の権利・データ由来](THIRD_PARTY.md)。既存リポジトリの変更やGitHubへの公開は行いません。
 
-### SSD1309 panel configuration
+### OLEDコントローラーの選択
 
-The default controller is SSD1309. Build and write the matching firmware:
+このハードウェアではMopping_rotalyで`-Ddisplay=sh1106`を使用していたため、既定値をSH1106に合わせています。モジュールの名称だけではなく、以前動作したコントローラー設定を使用してください。
 
 ```sh
-zig build -Ddisplay=ssd1309
+zig build -Ddisplay=sh1106
 ~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
 ```
 
-Other panels require an explicit `-Ddisplay=ssd1306`, `ssd1315`, or `sh1106`. SSD1309 initialization matches the clock and VCOM settings in Mopping_rotaly. Flashing has been reported successful; correct OLED output still requires hardware confirmation.
+先のSSD1309版では画面が真っ暗になったとの報告があります。今回のSH1106版の表示は実機確認待ちです。
