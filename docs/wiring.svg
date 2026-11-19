@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="550" viewBox="0 0 960 550">
+<rect width="960" height="550" fill="#fafafa"/><g font-family="monospace" font-size="17" fill="#111">
+<text x="30" y="35" font-size="23">ch32_mnist - CH32V003J4M6 SOP8 / 3.3V</text>
+<rect x="365" y="110" width="245" height="310" rx="8" fill="#eee" stroke="#222" stroke-width="2"/>
+<text x="385" y="145">CH32V003J4M6</text><text x="385" y="185">PC1 / pin 5</text><text x="385" y="220">PC2 / pin 6</text><text x="385" y="270">PA2 / pin 3</text><text x="385" y="305">PD5 / pin 8 *</text><text x="385" y="340">PC4 / pin 7</text><text x="385" y="380">VDD 4 / VSS 2</text>
+<text x="35" y="140">128x64 OLED</text><text x="35" y="185">SDA</text><text x="35" y="220">SCL</text><text x="35" y="255">VCC: 3.3V</text><text x="35" y="290">GND</text>
+<text x="710" y="220">Rotary encoder</text><text x="710" y="270">A</text><text x="710" y="305">B -- isolate *</text><text x="710" y="340">SW (active low)</text><text x="710" y="375">C / SW common: GND</text>
+<g fill="none" stroke="#333" stroke-width="2"><path d="M100 180 H365 M100 215 H365 M610 265 H700 M610 300 H700 M610 335 H700"/></g>
+<text x="30" y="455">* Pin 8 also bonds PD1/SWIO and PD4. Use a removable B jumper.</text>
+<text x="30" y="483">Programming: isolate B; connect SWIO to pin 8 and common GND.</text>
+<text x="30" y="511">I2C needs 3.3V pull-ups. Pin 1 (PA1/PD6) is unused.</text>
+</g></svg>
