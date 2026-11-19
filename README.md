@@ -44,7 +44,7 @@ reserved Flash, 512B main stack allowance and 128B ISR allowance. These allowanc
 are not measured stack usage. See [memory budget](docs/memory-budget.md).
 
 ```sh
-zig build -Ddisplay=sh1106
+zig build -Ddisplay=ssd1309
 zig build -Ddisplay=ssd1315
 zig build -Ddisplay=sh1106
 zig build -Dmodel=mlp32-int4 -Dpreprocess=antialiased
@@ -54,8 +54,7 @@ zig build assembly
 ZIG=zig sh tools/verify.sh
 ```
 
-SH1106 is the default for this hardware. All four controller paths are cross-build checked, not
-physically validated. -Dpreprocess selects direct/centered/normalized/antialiased;
+SSD1306 is the default. The user confirmed correct display on the Movoid hardware configuration. Other controller paths are cross-build checked; device-wide inference timing and stack measurements remain unverified. -Dpreprocess selects direct/centered/normalized/antialiased;
 normalized is the provisional default. The synthetic comparison is not a claim
 about general handwriting recognition. MLP16 variants are not implemented.
 
@@ -92,11 +91,11 @@ items are explicitly separated in the verification report.
 
 ### OLED controller selection
 
-This hardware previously used `-Ddisplay=sh1106` in Mopping_rotaly, so SH1106 is now the default. Use the same controller setting here; a module name alone does not establish controller compatibility.
+SSD1306 (128×64) is the default, matching the Movoid wiring. The user confirmed correct display after replacing the previous hardware; failure of the previous panel remains a hypothesis. Other panels require the appropriate `-Ddisplay` option.
 
 ```sh
-zig build -Ddisplay=sh1106
+zig build
 ~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
 ```
 
-The earlier SSD1309 firmware produced a blank screen according to the user. Correct display output with this SH1106 build remains to be confirmed on hardware.
+The standard build installs ELF, HEX and BIN files under `zig-out/firmware/`. No custom output prefix is needed.

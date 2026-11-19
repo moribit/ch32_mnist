@@ -6,11 +6,13 @@ pub fn build(b: *std.Build) void {
     const ModelChoice = enum { @"mlp32-int8", @"mlp32-int4" };
     const choice = b.option(ModelChoice, "model", "Bundled MLP32 int8 or exported int4") orelse .@"mlp32-int4";
     const Display = enum { ssd1306, ssd1309, ssd1315, sh1106 };
-    const display = b.option(Display, "display", "OLED controller") orelse .sh1106;
+    const display = b.option(Display, "display", "OLED controller") orelse .ssd1306;
     const display_test = b.option(bool, "display-test", "OLED-only full-buffer diagnostic; no encoder or inference") orelse false;
+    const display_legacy = b.option(bool, "display-legacy", "Diagnostic only: match Mopping application-owned startup") orelse false;
+    if (display_legacy and !display_test) @panic("display-legacy requires display-test=true");
     const dep = b.dependency("zinn", .{});
     const hal = b.dependency("ch32fun_zig", .{});
-    const fw = ch32.addFirmware(b, hal, .{ .name = "ch32_mnist", .root_source_file = b.path(if (display_test) "src/display_test.zig" else "src/main.zig"), .optimize = optimize, .runtime = .ch32fun_exti });
+    const fw = ch32.addFirmware(b, hal, .{ .name = "ch32_mnist", .root_source_file = b.path(if (display_legacy) "src/display_legacy.zig" else if (display_test) "src/display_test.zig" else "src/main.zig"), .optimize = optimize, .runtime = if (display_legacy) .application else .ch32fun_exti });
     const options = b.addOptions();
     options.addOption([]const u8, "display", @tagName(display));
     const Preprocess = enum { direct, centered, normalized, antialiased };
@@ -18,7 +20,8 @@ pub fn build(b: *std.Build) void {
     options.addOption(bool, "trace", b.option(bool, "trace", "Include real hidden activations") orelse false);
     options.addOption(bool, "diagnostic", b.option(bool, "diagnostic", "Keep SWIO; disable encoder and boot known sample") orelse false);
     options.addOption(bool, "benchmark", b.option(bool, "benchmark", "Nine inference measurements") orelse false);
-    const app = fw.root_module.import_table.get("app").?;
+    const app = if (display_legacy) fw.root_module else fw.root_module.import_table.get("app").?;
+    if (display_legacy) fw.entry = .{ .symbol_name = "_start" };
     app.addImport("options", options.createModule());
     var source = dep.path("examples/mnist-desktop/assets/mnist-mlp32-int8.zig");
     if (choice == .@"mlp32-int4") {

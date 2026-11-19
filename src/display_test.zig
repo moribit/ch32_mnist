@@ -21,28 +21,15 @@ pub fn main() noreturn {
         command(0xd5, 0xf0) catch halt();
         command(0xdb, 0x34) catch halt();
     }
-    var tick = false;
+    // Raw page bytes bypass glyph and pixel rendering entirely.
+    // Each phase lasts two seconds: all on, 0x55 rows, 0xaa rows, all off.
+    const patterns = [_]u8{ 0xff, 0x55, 0xaa, 0x00 };
     while (true) {
-        fun.ssd1306.setbuf(false);
-        for (0..128) |x| {
-            fun.ssd1306.drawPixel(@intCast(x), 0, true);
-            fun.ssd1306.drawPixel(@intCast(x), 63, true);
+        for (patterns) |pattern| {
+            @memset(&fun.ssd1306.buffer, pattern);
+            fun.ssd1306.refresh() catch halt();
+            fun.time.delayMs(2000);
         }
-        for (0..64) |y| {
-            fun.ssd1306.drawPixel(0, @intCast(y), true);
-            fun.ssd1306.drawPixel(127, @intCast(y), true);
-        }
-        fun.ssd1306.drawStrSz(8, 8, "OLED TEST", true, .x1);
-        fun.ssd1306.drawStrSz(8, 24, options.display, true, .x1);
-        for (40..56) |y| for (8..120) |x| {
-            if (((x / 8) & 1) == 0) fun.ssd1306.drawPixel(@intCast(x), @intCast(y), true);
-        };
-        if (tick) for (8..16) |y| for (112..120) |x| {
-            fun.ssd1306.drawPixel(@intCast(x), @intCast(y), true);
-        };
-        fun.ssd1306.refresh() catch halt();
-        tick = !tick;
-        fun.time.delayMs(500);
     }
 }
 fn halt() noreturn {

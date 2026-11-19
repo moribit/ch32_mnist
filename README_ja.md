@@ -43,7 +43,7 @@ zig build simulate > zig-out/preprocessing.csv
 予算は実測したスタック使用量ではありません。[メモリ設計](docs/memory-budget.md)。
 
 ```sh
-zig build -Ddisplay=sh1106
+zig build -Ddisplay=ssd1309
 zig build -Ddisplay=ssd1315
 zig build -Ddisplay=sh1106
 zig build -Dmodel=mlp32-int4 -Dpreprocess=antialiased
@@ -53,8 +53,7 @@ zig build assembly
 ZIG=zig sh tools/verify.sh
 ```
 
-標準OLEDはSSD1306です。4種類の制御経路はクロスビルド済みですが、各パネルの実機動作は
-未確認です。前処理はdirect／centered／normalized／antialiasedから選べます。
+標準OLEDはSSD1306です。Movoidと同じ構成で正常表示をユーザーが確認しています。他の制御経路はクロスビルド確認までで、推論時間・スタック使用量は未測定です。前処理はdirect／centered／normalized／antialiasedから選べます。
 標準は暫定的にnormalizedです。合成図形の比較結果を一般的な手書き認識精度とは扱いません。
 MLP16の選択肢は、MLP32 int4が収まったため追加していません。
 
@@ -97,11 +96,11 @@ Build／test／sizeは物理デバイスへ書き込みません。
 
 ### OLEDコントローラーの選択
 
-このハードウェアではMopping_rotalyで`-Ddisplay=sh1106`を使用していたため、既定値をSH1106に合わせています。モジュールの名称だけではなく、以前動作したコントローラー設定を使用してください。
+既定はMovoidの配線に対応するSSD1306（128×64）です。ハードウェア交換後の正常表示をユーザーが確認しています。以前のパネルの故障は仮説として残します。他のパネルでは対応する`-Ddisplay`を指定してください。
 
 ```sh
-zig build -Ddisplay=sh1106
+zig build
 ~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
 ```
 
-先のSSD1309版では画面が真っ暗になったとの報告があります。今回のSH1106版の表示は実機確認待ちです。
+通常ビルドのELF・HEX・BINは`zig-out/firmware/`へ出力します。専用の出力先指定は不要です。

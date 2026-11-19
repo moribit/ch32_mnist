@@ -119,11 +119,19 @@ simulator and physical Linux test execution were not added.
 
 User reports: SSD1306/SSD1309/SSD1315/SH1106 selections did not produce a correct display; SSD1306 showed faint/partial PEN DOWN text. Controller selection alone has not resolved the problem.
 
-An isolation firmware uses the HAL full framebuffer and `refresh()` path used by Mopping_rotaly, with no inference, encoder GPIO configuration, or application interrupts. It preserves SWIO and shows a border, OLED TEST text, controller name, bars, and a marker toggling every 500 ms. This is a diagnostic, not a confirmed fix.
+Initial full-buffer diagnostics also showed upper-screen horizontal gaps. Raw 0xff/0x55/0xaa/0x00 patterns reproduced nonuniform output, while Mopping appeared normal in its less-used upper region. This did not establish the root cause. A legacy application-owned startup diagnostic was added for comparison only; it is not used in the standard inference firmware.
+
+After replacing the hardware with the Movoid configuration, the user confirmed correct display with the standard SSD1306 MNIST firmware. The default is now SSD1306 and ordinary builds install to `zig-out/firmware/`. The earlier panel's failure is a hypothesis, not a measured diagnosis. This user-reported display confirmation does not establish inference latency, stack high-water, or complete control/input validation.
 
 ```sh
-zig build -Ddisplay=sh1106 -Ddisplay-test=true --prefix zig-out/display-test
-~/ch32fun/minichlink/minichlink -w zig-out/display-test/firmware/firmware.bin flash -b
+zig build
+~/ch32fun/minichlink/minichlink -w zig-out/firmware/firmware.bin flash -b
 ```
 
-Cross-build verified: Flash 4,356 B; static SRAM 1,036 B; stack/ISR allowance 640 B (not measured). Hardware output remains unverified. The ordinary firmware in `zig-out/firmware/` is not replaced by this command. Normal firmware still uses the memory-saving page buffer.
+Optional raw display diagnostics (no inference or application IRQs):
+
+```sh
+zig build -Ddisplay=ssd1306 -Ddisplay-test=true --prefix zig-out/display-test
+```
+
+This cycles through all-on, alternating rows, inverted alternating rows and all-off every two seconds. `-Ddisplay-legacy=true` additionally selects the legacy entry and requires `-Ddisplay-test=true`; it omits normal memory/IRQ initialization and is strictly for comparison. Normal firmware retains the 128-byte page buffer and proper HAL startup.
