@@ -162,3 +162,14 @@ current ELF resources and the combined Trace/benchmark capacity regression.
 Host tests and cross-builds passed. Model export bytes and all golden logits are
 unchanged. The updated UI/held-rotation gestures have not been flashed or timed
 on hardware in this revision.
+
+## One detent / one step correction
+
+After the user reported two steps per physical click, the encoder threshold was
+changed from two edges to a full four-edge quadrature cycle. Both ordinary
+direction changes and held movement now consume one full cycle per event. Tests
+verify half-cycles produce no event, both directions, bounce/reversal, held
+movement, press/release boundary phase resets and queue overflow recovery. Debug
+and ReleaseSafe tests and the default final-ELF budget check pass. The default
+now uses 16,064 B Flash and 668 B static SRAM (+4 B Flash from the DRAW revision).
+Physical detent behavior of this correction still requires user confirmation.

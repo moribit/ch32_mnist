@@ -11,7 +11,7 @@ Default: DRAW, cursor (7,7), NORTH, PEN DOWN, normalized preprocessing.
 | Hold and rotate positive / negative | Advance / move backwards without turning |
 | Hold 700ms without rotation | Open or close MENU |
 
-The decoder retains Mopping_rotaly's two-edge setting. Physical direction and
+The decoder reports one event per complete four-edge quadrature cycle. Physical direction and
 steps per detent depend on wiring/encoder type and require device verification.
 With PEN DOWN the path is drawn; PEN UP moves only the cursor. Coordinates clamp
 at the canvas edge. A click is one UNDO operation; all moves in one held gesture

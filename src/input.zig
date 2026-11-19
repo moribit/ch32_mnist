@@ -1,6 +1,6 @@
 pub const Event = union(enum) { rotate: i8, stroke: i8, stroke_end, click, long_press };
 pub const Encoder = struct {
-    // Match Mopping_rotaly: two valid Gray-code edges per reported step.
+    // One complete four-edge quadrature cycle per physical detent.
     previous: u2 = 3,
     phase: i8 = 0,
     invalid: u16 = 0,
@@ -15,12 +15,12 @@ pub const Encoder = struct {
             return 0;
         }
         self.phase += d;
-        if (self.phase >= 2) {
-            self.phase -= 2;
+        if (self.phase >= 4) {
+            self.phase -= 4;
             return 1;
         }
-        if (self.phase <= -2) {
-            self.phase += 2;
+        if (self.phase <= -4) {
+            self.phase += 4;
             return -1;
         }
         return 0;

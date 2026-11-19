@@ -8,7 +8,7 @@ test "encoder detents, bounce, invalid transition and reversal" {
     var e: input.Encoder = .{};
     var total: i32 = 0;
     for ([_]u2{ 2, 0, 1, 3 }) |s| total += e.update(s);
-    try std.testing.expectEqual(@as(i32, -2), total);
+    try std.testing.expectEqual(@as(i32, -1), total);
     for ([_]u2{ 1, 0, 2, 3 }) |s| total += e.update(s);
     try std.testing.expectEqual(@as(i32, 0), total);
     for ([_]u2{ 2, 3, 2, 3 }) |s| try std.testing.expectEqual(@as(i8, 0), e.update(s));
@@ -184,26 +184,19 @@ test "long release after a blocked poll never becomes a click; AA has partial co
     try std.testing.expect(partial);
 }
 
-test "Mopping half-cycle steps and bounce recovery" {
+test "one full cycle per detent with bounce and reversal" {
     var e: input.Encoder = .{};
-    try std.testing.expectEqual(@as(i8, 0), e.update(2));
-    try std.testing.expectEqual(@as(i8, -1), e.update(0));
-    try std.testing.expectEqual(@as(i8, 0), e.update(1));
+    for ([_]u2{ 2, 0, 1 }) |q| try std.testing.expectEqual(@as(i8, 0), e.update(q));
     try std.testing.expectEqual(@as(i8, -1), e.update(3));
-    try std.testing.expectEqual(@as(i8, 0), e.update(1));
-    try std.testing.expectEqual(@as(i8, 1), e.update(0));
-    try std.testing.expectEqual(@as(i8, 0), e.update(2));
+    for ([_]u2{ 1, 0, 2 }) |q| try std.testing.expectEqual(@as(i8, 0), e.update(q));
     try std.testing.expectEqual(@as(i8, 1), e.update(3));
-    // A bounce cancels the pending edge, not the next valid half-cycle.
-    try std.testing.expectEqual(@as(i8, 0), e.update(2));
-    try std.testing.expectEqual(@as(i8, 0), e.update(3));
-    try std.testing.expectEqual(@as(i8, 0), e.update(2));
-    try std.testing.expectEqual(@as(i8, -1), e.update(0));
-    // A skipped Gray state resets phase without inventing a turn.
-    try std.testing.expectEqual(@as(i8, 0), e.update(3));
+    for ([_]u2{ 2, 3, 2, 3, 2, 0, 1 }) |q| try std.testing.expectEqual(@as(i8, 0), e.update(q));
+    try std.testing.expectEqual(@as(i8, -1), e.update(3));
+    _ = e.update(2);
+    _ = e.update(1); // invalid jump resets partial cycle
     try std.testing.expectEqual(@as(u16, 1), e.invalid);
-    try std.testing.expectEqual(@as(i8, 0), e.update(2));
-    try std.testing.expectEqual(@as(i8, -1), e.update(0));
+    for ([_]u2{ 3, 2, 0 }) |q| try std.testing.expectEqual(@as(i8, 0), e.update(q));
+    try std.testing.expectEqual(@as(i8, -1), e.update(1));
 }
 
 fn drain(cn: *input.Controller, a: *application.App) void {
@@ -224,7 +217,7 @@ test "held rotation is one undo gesture, release has no click, no long menu" {
     drain(&cn, &a);
     const before = a.turtle;
     turn(&cn, &a, true, 30, true);
-    try std.testing.expectEqual(@as(u8, 5), a.turtle.y);
+    try std.testing.expectEqual(@as(u8, 6), a.turtle.y);
     try std.testing.expectEqual(before.direction, a.turtle.direction);
     try std.testing.expect(a.stroke_active);
     try std.testing.expect(!a.due(1000));
@@ -234,7 +227,7 @@ test "held rotation is one undo gesture, release has no click, no long menu" {
     cn.sample(3, false, 1210);
     cn.sample(3, false, 1230);
     drain(&cn, &a);
-    try std.testing.expectEqual(@as(u8, 5), a.turtle.y);
+    try std.testing.expectEqual(@as(u8, 6), a.turtle.y);
     try std.testing.expect(!a.stroke_active);
     try std.testing.expect(a.due(1230));
     a.event(.long_press, 1240);
@@ -297,14 +290,14 @@ test "debounce boundaries, long menu latch, queue ordering and overflow fail clo
     var records: usize = 0;
     while (cn.pop()) |r| {
         records += 1;
-        try std.testing.expectEqual(@as(i8, if (records <= 2) 1 else -1), r.event.rotate);
+        try std.testing.expectEqual(@as(i8, if (records <= 1) 1 else -1), r.event.rotate);
     }
-    try std.testing.expectEqual(@as(usize, 4), records);
+    try std.testing.expectEqual(@as(usize, 2), records);
     cn = .{};
-    for (0..4) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, true, @intCast(20 + cycle * 4 + i));
+    for (0..8) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, true, @intCast(20 + cycle * 4 + i));
     // Establish a stable press then deliberately exceed queue capacity.
     cn.sample(3, true, 100);
-    for (0..4) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, true, @intCast(110 + cycle * 4 + i));
+    for (0..8) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, true, @intCast(110 + cycle * 4 + i));
     drain(&cn, &a);
     try std.testing.expect(cn.lost > 0);
     try std.testing.expect(!a.stroke_active);
@@ -415,7 +408,7 @@ test "prediction glyphs distinct and menu selection inverted without state mutat
 test "normal rotation recovers after queue overflow and prior long menu cannot draw" {
     var cn: input.Controller = .{};
     var a: application.App = .{};
-    for (0..4) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, false, @intCast(cycle * 4 + i));
+    for (0..8) |cycle| for ([_]u2{ 1, 0, 2, 3 }, 0..) |q, i| cn.sample(q, false, @intCast(cycle * 4 + i));
     drain(&cn, &a);
     try std.testing.expect(cn.lost > 0);
     const old = a.turtle.direction;
@@ -447,19 +440,23 @@ test "one-cell turtle path equals Bresenham endpoints in all directions" {
 
 test "partial encoder steps never straddle a debounced press or release" {
     var cn: input.Controller = .{};
-    cn.sample(2, false, 0); // partial normal step
-    cn.sample(2, true, 1);
-    cn.sample(2, true, 21);
-    cn.sample(0, true, 30);
-    try std.testing.expect(cn.pop() == null);
-    cn.sample(1, true, 31);
+    cn.sample(2, false, 0);
+    cn.sample(3, true, 1);
+    cn.sample(3, true, 21);
+    for ([_]u2{ 2, 0, 1 }, 0..) |q, i| {
+        cn.sample(q, true, @intCast(30 + i));
+        try std.testing.expect(cn.pop() == null);
+    }
+    cn.sample(3, true, 33);
     try std.testing.expect(cn.pop().?.event == .stroke);
-    cn.sample(1, false, 40);
-    cn.sample(1, false, 60);
+    cn.sample(3, false, 40);
+    cn.sample(3, false, 60);
     try std.testing.expect(cn.pop().?.event == .stroke_end);
-    cn.sample(3, false, 61);
-    try std.testing.expect(cn.pop() == null);
-    cn.sample(2, false, 62);
+    for ([_]u2{ 2, 0, 1 }, 0..) |q, i| {
+        cn.sample(q, false, @intCast(61 + i));
+        try std.testing.expect(cn.pop() == null);
+    }
+    cn.sample(3, false, 64);
     try std.testing.expect(cn.pop().?.event == .rotate);
 }
 test "redrawing existing ink keeps inference current" {

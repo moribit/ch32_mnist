@@ -14,7 +14,7 @@ linker, usable limit 16,320B. SRAM capacity 2,048B.
 | diagnostic | 15,896 | 756 | 512 + 128 | 652 |
 | antialiased | 16,152 | 668 | 512 + 128 | 740 |
 
-Current DRAW revision: [cross-build-sizes.json](cross-build-sizes.json).
+DRAW layout revision (1ec9a81): [cross-build-sizes.json](cross-build-sizes.json).
 Initial milestone sizes are preserved in [cross-build-sizes-initial.json](cross-build-sizes-initial.json).
 The immediate input-polling baseline was 14,208B Flash / 620B static SRAM.
 Current default is 16,060B / 668B: +1,852B / +48B. The 1KB Flash growth target was
@@ -72,3 +72,5 @@ allowance leaves 788 B RAM margin. The encoder no longer enables EXTI interrupts
 the conservative ISR allowance is retained. Older assembly sizes above are
 historical observations, not a new whole-stack bound. Hardware rotation response
 and stack high-water remain unverified for this revision.
+
+The subsequent one-detent/one-step correction changes the default Flash to 16,064B; static SRAM remains 668B. See the latest verification report.

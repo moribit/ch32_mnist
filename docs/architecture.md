@@ -44,7 +44,7 @@ and renderer here are original small application code, not a second ML runtime.
 ## Scheduling / ownership
 
 Encoder PA2/PD5 and PC4 button are sampled together from main and after each
-page transfer (6ms polling window), with Mopping_rotaly's two-edge decoder. A
+page transfer (6ms polling window), with a four-edge-per-detent decoder. A
 four-entry timestamped semantic event queue preserves normal rotation, held
 movement and release order. No event merging cancels opposite moves. Debounce
 boundary phases are reset, and a held movement consumes click/long-press behavior.
